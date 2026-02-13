@@ -23,39 +23,38 @@ public class UserController {
         return userService.login(email, password);
     }
 
-    // ---------------- ADD EMPLOYEE ----------------
-    @PostMapping("/employees")
-    public User addEmployee(@RequestBody UserRequest request,
-                            @RequestParam String supervisorEmail) {
-        return userService.addEmployee(request, supervisorEmail);
+    // ---------------- ADD USER ----------------
+    // Role must be either SUPERVISOR or EMPLOYEE
+    @PostMapping
+    public User addUser(@RequestBody UserRequest request,
+                        @RequestParam(required = false) Long supervisorId) {
+        return userService.addUser(request, supervisorId);
     }
 
-    // ---------------- ADD SUPERVISOR ----------------
-    @PostMapping("/supervisors")
-    public User addSupervisor(@RequestBody UserRequest request) {
-        return userService.addSupervisor(request);
+    // ---------------- UPDATE USER ----------------
+    @PutMapping("/{id}")
+    public User updateUser(@PathVariable Long id,
+                           @RequestBody UserRequest request) {
+        return userService.updateUser(id, request);
     }
 
-    // ---------------- UPDATE EMPLOYEE ----------------
-    @PutMapping("/employees/{id}")
-    public User updateEmployee(@PathVariable Long id,
-                               @RequestBody UserRequest request,
-                               @RequestParam String supervisorEmail) {
-        return userService.updateEmployee(id, request, supervisorEmail);
+    // ---------------- DELETE USER ----------------
+    @DeleteMapping("/{id}")
+    public String deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return "User deleted successfully";
     }
 
-    // ---------------- DELETE EMPLOYEE ----------------
-    @DeleteMapping("/employees/{id}")
-    public String deleteEmployee(@PathVariable Long id,
-                                 @RequestParam String supervisorEmail) {
-        userService.deleteEmployee(id, supervisorEmail);
-        return "Employee deleted successfully";
-    }
-
-    // ---------------- LIST ALL EMPLOYEES ----------------
+    // ---------------- LIST EMPLOYEES ----------------
     @GetMapping("/employees")
     public List<User> getAllEmployees() {
         return userService.getAllEmployees();
+    }
+
+    // ---------------- LIST SUPERVISORS ----------------
+    @GetMapping("/supervisors")
+    public List<User> getAllSupervisors() {
+        return userService.getAllSupervisors();
     }
 
     // ---------------- FIND USER BY EMAIL ----------------

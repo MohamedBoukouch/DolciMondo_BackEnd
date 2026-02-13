@@ -4,12 +4,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.DolciMondo_backend.dtos.user.UserRequest;
-import com.example.DolciMondo_backend.models.Role;
 import com.example.DolciMondo_backend.models.User;
+import com.example.DolciMondo_backend.models.enums.Role;
 import com.example.DolciMondo_backend.repository.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -35,102 +36,65 @@ public class UserService {
         return "Login successful for " + user.getEmail();
     }
 
-    // ---------------- ADD SUPERVISOR ----------------
-    public User addSupervisor(UserRequest request) {
+    // ---------------- ADD USER ----------------
+    public User addUser(UserRequest request, Long supervisorId) {
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
 
-        User supervisor = new User();
-        supervisor.setEmail(request.getEmail());
-        supervisor.setPassword(passwordEncoder.encode(request.getPassword()));
-        supervisor.setNom(request.getNom());
-        supervisor.setPrenom(request.getPrenom());
-        supervisor.setRole(Role.SUPERVISEUR);
+        User user = new User(
+                request.getEmail(),
+                passwordEncoder.encode(request.getPassword()),
+                request.getNom(),
+                request.getPrenom(),
+                request.getRole(),
+                supervisorId                // null if supervisor
+        );
 
-        return userRepository.save(supervisor);
+        return userRepository.save(user);
     }
 
-    // ---------------- ADD EMPLOYEE ----------------
-    public User addEmployee(UserRequest request, String supervisorEmail) {
-        User supervisor = userRepository.findByEmail(supervisorEmail)
-                .orElseThrow(() -> new RuntimeException("Supervisor not found"));
+    // ---------------- UPDATE USER ----------------
+    public User updateUser(Long id, UserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (supervisor.getRole() != Role.SUPERVISEUR) {
-            throw new RuntimeException("Only superviseur can add employees");
-        }
-
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        User employee = new User();
-        employee.setEmail(request.getEmail());
-        employee.setPassword(passwordEncoder.encode(request.getPassword()));
-        employee.setNom(request.getNom());
-        employee.setPrenom(request.getPrenom());
-        employee.setRole(Role.EMPLOYEE);
-
-        return userRepository.save(employee);
-    }
-
-    // ---------------- UPDATE EMPLOYEE ----------------
-    public User updateEmployee(Long id, UserRequest request, String supervisorEmail) {
-        User supervisor = userRepository.findByEmail(supervisorEmail)
-                .orElseThrow(() -> new RuntimeException("Supervisor not found"));
-
-        if (supervisor.getRole() != Role.SUPERVISEUR) {
-            throw new RuntimeException("Only superviseur can update employees");
-        }
-
-        User employee = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        if (employee.getRole() != Role.EMPLOYEE) {
-            throw new RuntimeException("Cannot update superviseur");
-        }
-
-        employee.setNom(request.getNom());
-        employee.setPrenom(request.getPrenom());
+        user.setNom(request.getNom());
+        user.setPrenom(request.getPrenom());
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-            employee.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
-        return userRepository.save(employee);
+        return userRepository.save(user);
     }
 
-    // ---------------- DELETE EMPLOYEE ----------------
-    public void deleteEmployee(Long id, String supervisorEmail) {
-        User supervisor = userRepository.findByEmail(supervisorEmail)
-                .orElseThrow(() -> new RuntimeException("Supervisor not found"));
-
-        if (supervisor.getRole() != Role.SUPERVISEUR) {
-            throw new RuntimeException("Only superviseur can delete employees");
-        }
-
-        User employee = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        if (employee.getRole() != Role.EMPLOYEE) {
-            throw new RuntimeException("Cannot delete superviseur");
-        }
-
-        userRepository.delete(employee);
+    // ---------------- DELETE USER ----------------
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        userRepository.delete(user);
     }
 
-    // ---------------- LIST EMPLOYEES ----------------
+    // ---------------- LIST USERS ----------------
     public List<User> getAllEmployees() {
         return userRepository.findAll()
                 .stream()
                 .filter(u -> u.getRole() == Role.EMPLOYEE)
-                .toList();
+                .collect(Collectors.toList());
+    }
+    
+
+    public List<User> getAllSupervisors() {
+        return userRepository.findAll()
+                .stream()
+                .filter(u -> u.getRole() == Role.SUPERVISEUR)
+                .collect(Collectors.toList());
     }
 
     // ---------------- FIND BY EMAIL ----------------
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
+
 }
-
-
